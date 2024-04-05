@@ -47,7 +47,7 @@ CREATE TABLE social_accounts(
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
---Bảng danh mục sản phẩm (Category)
+-- Bảng danh mục sản phẩm (Category)
 CREATE TABLE categories(
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL DEFAULT '' COMMENT 'Tên danh mục'
@@ -65,6 +65,15 @@ CREATE TABLE products(
     updated_at DATETIME,
     category_id INT,
     FOREIGN KEY (category_id) REFERENCES categories(id)
+);
+
+CREATE TABLE product_images(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    product_id INT,
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    CONSTRAINT fk_product_images_product_id
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    image_url VARCHAR(300)
 );
 
 -- Đặt hàng (orders)
