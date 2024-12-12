@@ -1,7 +1,13 @@
 package com.example.shopapp.controllers;
 
 import com.example.shopapp.dtos.ProductDTO;
+import com.example.shopapp.dtos.ProductImageDTO;
+import com.example.shopapp.exceptions.DataNotFoundException;
+import com.example.shopapp.models.Product;
+import com.example.shopapp.models.ProductImage;
+import com.example.shopapp.services.ProductService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,13 +24,16 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("${api.prefix}/products")
+@RequiredArgsConstructor
 public class ProductController {
-    @PostMapping(value = "", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> createProduct(@Valid @ModelAttribute ProductDTO productDTO, BindingResult bindingResult){
+    private final ProductService productService;
+    @PostMapping(value = "")
+    public ResponseEntity<?> createProduct(@Valid @RequestBody ProductDTO productDTO, BindingResult bindingResult){
         try{
             if(bindingResult.hasErrors()){
                 List<String> errorMessages = bindingResult.getFieldErrors()
@@ -33,8 +42,26 @@ public class ProductController {
                         .toList();
                 return ResponseEntity.badRequest().body(errorMessages);
             }
-            List<MultipartFile> files = productDTO.getFiles();
+
+            Product newProduct = productService.createProduct(productDTO);
+
+            return ResponseEntity.ok(newProduct);
+        } catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "uploads/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadImages(
+            @PathVariable("id") Long productId,
+            @ModelAttribute List<MultipartFile> files) {
+        try {
+            Product exsitingProduct = productService.getProductById(productId);
             files = files == null ? new ArrayList<MultipartFile>() : files;
+            if(files.size() > ProductImage.MAXIMUM_IMAGES_PER_PRODUCT){
+                return ResponseEntity.badRequest().body("You can only upload maximum 5 images");
+            }
+            List<ProductImage> productImages = new ArrayList<>();
             for (MultipartFile file : files){
                 if (file.getSize() == 0){
                     continue;
@@ -53,15 +80,24 @@ public class ProductController {
                 // Luu file va cap nhat thumbnail trong DTO
                 String fileName = storeFile(file);
                 // Luu vao doi tuong product trong DB
-                //TODO : luw vao bang product_images
+                ProductImage productImage = productService.createProductImage(
+                        exsitingProduct.getId(),
+                        ProductImageDTO.builder()
+                                .imageUrl(fileName)
+                                .build());
+                productImages.add(productImage);
             }
-            return ResponseEntity.ok("Product created successfully");
-        } catch (Exception e){
+            return ResponseEntity.ok().body(productImages);
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
     private String storeFile(MultipartFile file) throws IOException{
-        String fileName = StringUtils.cleanPath(file.getOriginalFilename());
+        if (!isImageFile(file) || file.getOriginalFilename() == null) {
+            throw new IOException("Invalid image file format");
+        }
+        String fileName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
         // them UUID vao truoc ten file de dam bao ten file la duy nhat
         String uniqueFileName = UUID.randomUUID().toString() + "_" + fileName;
         // duong dan den thu muc ma muon luu file
@@ -76,6 +112,12 @@ public class ProductController {
         Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
         return uniqueFileName;
     }
+
+    private boolean isImageFile(MultipartFile file){
+        String contentType = file.getContentType();
+        return contentType != null && contentType.startsWith("image/");
+    }
+
     @GetMapping("")
     public ResponseEntity<String> getProducts(
             @RequestParam("page") int page,
