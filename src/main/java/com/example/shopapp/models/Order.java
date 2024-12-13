@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.Date;
 
 @Entity
-@Table(name = "order")
+@Table(name = "orders")
 @Data
 @Getter
 @Setter

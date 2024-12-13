@@ -1,18 +1,19 @@
 package com.example.shopapp.services;
 
 import com.example.shopapp.dtos.OrderDTO;
-import com.example.shopapp.responses.OrderResponse;
+import com.example.shopapp.exceptions.DataNotFoundException;
+import com.example.shopapp.models.Order;
 
 import java.util.List;
 
 public interface OrderService {
-    OrderResponse createOrder(OrderDTO orderDTO) throws Exception;
+    Order createOrder(OrderDTO orderDTO) throws Exception;
 
-    OrderResponse getOrder(Long orderId);
+    Order getOrder(Long orderId) throws Exception;
 
-    OrderResponse updateOrder(Long orderId, OrderDTO orderDTO);
+    Order updateOrder(Long orderId, OrderDTO orderDTO) throws Exception;
 
     void deleteOrder(Long orderId);
 
-    List<OrderResponse> getAllOrders(Long userId);
+    List<Order> ordersFindByUserId(Long userId) throws Exception;
 }
