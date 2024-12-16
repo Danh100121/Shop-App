@@ -80,7 +80,12 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public void deleteOrder(Long orderId) {
-
+        Order order = orderRepository.findById(orderId).orElse(null);
+        // no hard-delete => please soft-delete
+        if(order != null) {
+          order.setActive(false);
+          orderRepository.save(order);
+        }
     }
 
     @Override
