@@ -86,7 +86,7 @@ CREATE TABLE orders(
     phone_number VARCHAR(20) NOT NULL,
     address VARCHAR(200) NOT NULL,
     note VARCHAR(100) DEFAULT '',
-    oder_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
     status VARCHAR(20),
     total_money FLOAT CHECK(total_money >= 0)
 );
